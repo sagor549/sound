@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CheckCircle, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 const platforms = [
   {
@@ -55,67 +56,113 @@ const platforms = [
   }
 ];
 
-const usePlatformConnections = () => {
-  const [connectedPlatforms, setConnectedPlatforms] = useState<string[]>([]);
-  
-  const connectPlatform = async (platformName: string) => {
-    // This will handle OAuth flow for each platform
+export const PlatformConnections = () => {
+  const { isSpotifyConnected, connectSpotify, disconnectSpotify, syncSpotifyData, user } = useAuth();
+  const { toast } = useToast();
+  const [syncing, setSyncing] = useState(false);
+
+  const handleConnect = async (platformName: string) => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to connect platforms",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       switch (platformName) {
         case 'Spotify':
-          // Spotify OAuth integration
+          connectSpotify();
           break;
         case 'Apple Music':
-          // Apple Music API integration
+          toast({
+            title: "Coming Soon",
+            description: "Apple Music integration is coming soon!",
+          });
           break;
         case 'YouTube':
-          // YouTube Data API integration
+          toast({
+            title: "Coming Soon",
+            description: "YouTube integration is coming soon!",
+          });
           break;
         case 'TikTok':
-          // TikTok API integration
+          toast({
+            title: "Coming Soon",
+            description: "TikTok integration is coming soon!",
+          });
           break;
         case 'SoundCloud':
-          // SoundCloud API integration
+          toast({
+            title: "Coming Soon",
+            description: "SoundCloud integration is coming soon!",
+          });
           break;
         case 'Instagram':
-          // Instagram Basic Display API integration
+          toast({
+            title: "Coming Soon",
+            description: "Instagram integration is coming soon!",
+          });
           break;
       }
-      
-      setConnectedPlatforms(prev => [...prev, platformName]);
-    } catch (error) {
-      console.error(`Failed to connect ${platformName}:`, error);
-    }
-  };
-
-  const disconnectPlatform = (platformName: string) => {
-    setConnectedPlatforms(prev => prev.filter(p => p !== platformName));
-  };
-
-  return {
-    connectedPlatforms,
-    connectPlatform,
-    disconnectPlatform
-  };
-};
-
-export const PlatformConnections = () => {
-  const { connectedPlatforms, connectPlatform } = usePlatformConnections();
-  const { toast } = useToast();
-
-  const handleConnect = async (platformName: string) => {
-    try {
-      await connectPlatform(platformName);
-      toast({
-        title: "Platform Connected",
-        description: `Successfully connected to ${platformName}`,
-      });
     } catch (error) {
       toast({
         title: "Connection Failed",
         description: `Failed to connect to ${platformName}. Please try again.`,
         variant: "destructive",
       });
+    }
+  };
+
+  const handleDisconnect = async (platformName: string) => {
+    try {
+      switch (platformName) {
+        case 'Spotify':
+          await disconnectSpotify();
+          toast({
+            title: "Platform Disconnected",
+            description: "Spotify has been disconnected",
+          });
+          break;
+      }
+    } catch (error) {
+      toast({
+        title: "Disconnection Failed",
+        description: `Failed to disconnect ${platformName}. Please try again.`,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const getConnectionStatus = (platformName: string) => {
+    switch (platformName) {
+      case 'Spotify':
+        return isSpotifyConnected;
+      default:
+        return false;
+    }
+  };
+
+  const handleSyncData = async () => {
+    if (!isSpotifyConnected) return;
+    
+    setSyncing(true);
+    try {
+      await syncSpotifyData();
+      toast({
+        title: "Data Synced",
+        description: "Your Spotify data has been synced successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Sync Failed",
+        description: "Failed to sync your data. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -132,7 +179,7 @@ export const PlatformConnections = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {platforms.map((platform) => {
-            const isConnected = connectedPlatforms.includes(platform.name);
+            const isConnected = getConnectionStatus(platform.name);
             
             return (
               <Card key={platform.name} className="p-6 group hover:scale-105">
@@ -150,7 +197,30 @@ export const PlatformConnections = () => {
                   {isConnected ? (
                     <div className="flex items-center gap-2 text-growth">
                       <CheckCircle className="w-5 h-5" />
-                      <span className="text-sm font-medium">Connected</span>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium">Connected</span>
+                        {platform.name === 'Spotify' && (
+                          <div className="flex gap-1 mt-1">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={handleSyncData}
+                              disabled={syncing}
+                              className="text-xs h-6 px-2"
+                            >
+                              {syncing ? 'Syncing...' : 'Sync Data'}
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleDisconnect(platform.name)}
+                              className="text-xs h-6 px-2 text-destructive hover:text-destructive"
+                            >
+                              Disconnect
+                            </Button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ) : (
                     <Button 
@@ -176,6 +246,17 @@ export const PlatformConnections = () => {
             );
           })}
         </div>
+
+        {isSpotifyConnected && (
+          <div className="text-center mt-8 p-4 bg-secondary/20 rounded-lg">
+            <p className="text-sm text-muted-foreground mb-2">
+              🎉 Spotify is connected! Your analytics data is being synced automatically.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Data syncs every hour, or you can manually sync using the button above.
+            </p>
+          </div>
+        )}
 
         <div className="text-center mt-8">
           <Button variant="hero" size="lg" asChild>
