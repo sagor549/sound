@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuthStore } from '@/stores/authStore'
 import { useToast } from '@/hooks/use-toast'
 import { Loader2, Mail, Lock, User, Music } from 'lucide-react'
 
@@ -23,7 +23,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     artistName: ''
   })
   
-  const { signUp, signIn, signInWithGoogle, signInWithSpotify } = useAuth()
+  const { signUp, signIn, signInWithGoogle, signInWithSpotify } = useAuthStore()
   const { toast } = useToast()
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

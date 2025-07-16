@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { spotifyAPI } from '@/lib/spotify';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuthStore } from '@/stores/authStore';
 
 export interface SongAnalytics {
   id: string;
@@ -68,7 +68,7 @@ export interface GeographicData {
 }
 
 export const useAnalytics = (connectedPlatforms: string[], timeRange: string = '30d') => {
-  const { isSpotifyConnected, user } = useAuth();
+  const { isSpotifyConnected, user } = useAuthStore();
   const [songAnalytics, setSongAnalytics] = useState<SongAnalytics[]>([]);
   const [platformAnalytics, setPlatformAnalytics] = useState<PlatformAnalytics[]>([]);
   const [monthlyEarnings, setMonthlyEarnings] = useState<MonthlyEarnings[]>([]);

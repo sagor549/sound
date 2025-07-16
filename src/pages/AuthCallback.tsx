@@ -1,14 +1,14 @@
 import { useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { spotifyAPI } from '@/lib/spotify'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuthStore } from '@/stores/authStore'
 import { useToast } from '@/hooks/use-toast'
 import { Loader2 } from 'lucide-react'
 
 export const AuthCallback = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { refreshUserProfile } = useAuth()
+  const { refreshUserProfile } = useAuthStore()
   const { toast } = useToast()
 
   useEffect(() => {

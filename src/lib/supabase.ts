@@ -84,6 +84,13 @@ export const auth = {
       email,
       password
     })
+    
+    // Ensure session persistence
+    if (data.session) {
+      // The session should automatically be stored by Supabase
+      console.log('User signed in successfully:', data.user?.email)
+    }
+    
     return { data, error }
   },
 

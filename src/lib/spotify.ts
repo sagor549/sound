@@ -118,7 +118,56 @@ export class SpotifyAPI {
     if (session?.user) {
       const { data: connection } = await db.getSpotifyConnection(session.user.id)
       
-      if (connection && new Date(connection.expires_at) > new Date()) {
+      if (connection) {
+        const expiresAt = new Date(connection.expires_at)
+        const now = new Date()
+        
+        if (expiresAt > now) {
+          // Token is still valid
+          this.accessToken = connection.access_token
+          this.refreshToken = connection.refresh_token
+          this.userId = connection.spotify_user_id
+          this.saveTokensToStorage(this.accessToken, this.refreshToken, this.userId)
+          return true
+        } else if (connection.refresh_token) {
+          // Token expired, try to refresh
+          this.refreshToken = connection.refresh_token
+          return await this.refreshAccessToken()
+        }
+      }
+    }
+    
+    return false
+  }
+
+  // Check if tokens are stored and valid
+  async checkStoredTokens() {
+    if (this.accessToken && this.refreshToken && this.userId) {
+      // Try to make a simple API call to verify token validity
+      try {
+        await this.getUserProfile()
+        return true
+      } catch (error) {
+        // Token might be expired, try to refresh
+        if (this.refreshToken) {
+          return await this.refreshAccessToken()
+        }
+      }
+    }
+    return false
+  }
+
+  // Enhanced initialization that checks stored tokens first
+  async initialize() {
+    // First check if we have valid stored tokens
+    const hasValidTokens = await this.checkStoredTokens()
+    if (hasValidTokens) {
+      return true
+    }
+    
+    // If no valid stored tokens, try to initialize from session
+    return await this.initializeFromSession()
+  }
         this.accessToken = connection.access_token
         this.refreshToken = connection.refresh_token
         this.userId = connection.spotify_user_id

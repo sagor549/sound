@@ -1,13 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Music, User, Settings, LogOut } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuthStore } from "@/stores/authStore";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export const Header = () => {
-  const { user, userProfile, signOut, loading } = useAuth();
+  const { user, userProfile, signOut, loading } = useAuthStore();
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   const handleSignOut = async () => {

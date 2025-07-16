@@ -1,4 +1,4 @@
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuthStore } from '@/stores/authStore'
 import { AuthModal } from './AuthModal'
 import { useState } from 'react'
 import { Loader2 } from 'lucide-react'
@@ -12,7 +12,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children, 
   fallback 
 }) => {
-  const { user, loading } = useAuth()
+  const { user, loading } = useAuthStore()
   const [showAuthModal, setShowAuthModal] = useState(false)
 
   if (loading) {

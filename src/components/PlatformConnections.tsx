@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CheckCircle, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuthStore } from "@/stores/authStore";
 
 const platforms = [
   {
@@ -57,7 +57,7 @@ const platforms = [
 ];
 
 export const PlatformConnections = () => {
-  const { isSpotifyConnected, connectSpotify, disconnectSpotify, syncSpotifyData, user } = useAuth();
+  const { isSpotifyConnected, connectSpotify, disconnectSpotify, syncSpotifyData, user } = useAuthStore();
   const { toast } = useToast();
   const [syncing, setSyncing] = useState(false);
 
