@@ -168,18 +168,6 @@ export class SpotifyAPI {
     // If no valid stored tokens, try to initialize from session
     return await this.initializeFromSession()
   }
-        this.accessToken = connection.access_token
-        this.refreshToken = connection.refresh_token
-        this.userId = connection.spotify_user_id
-        this.saveTokensToStorage(this.accessToken, this.refreshToken, this.userId)
-        return true
-      } else if (connection?.refresh_token) {
-        return await this.refreshAccessToken()
-      }
-    }
-    
-    return false
-  }
 
   // Exchange authorization code for access token
   async exchangeCodeForToken(code: string): Promise<boolean> {
