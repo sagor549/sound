@@ -23,6 +23,7 @@ interface AuthState {
   userProfile: UserProfile | null
   loading: boolean
   isSpotifyConnected: boolean
+  initialized: boolean
   
   // Actions
   setUser: (user: User | null) => void
@@ -30,6 +31,7 @@ interface AuthState {
   setUserProfile: (profile: UserProfile | null) => void
   setLoading: (loading: boolean) => void
   setSpotifyConnected: (connected: boolean) => void
+  setInitialized: (initialized: boolean) => void
   
   // Auth methods
   signUp: (email: string, password: string, userData?: any) => Promise<{ data: any; error: any }>
@@ -56,6 +58,7 @@ export const useAuthStore = create<AuthState>()(
       userProfile: null,
       loading: true,
       isSpotifyConnected: false,
+      initialized: false,
 
       setUser: (user) => set({ user }),
       setSession: (session) => set({ session }),
@@ -67,6 +70,7 @@ export const useAuthStore = create<AuthState>()(
       },
       setLoading: (loading) => set({ loading }),
       setSpotifyConnected: (isSpotifyConnected) => set({ isSpotifyConnected }),
+      setInitialized: (initialized) => set({ initialized }),
 
       signUp: async (email: string, password: string, userData?: any) => {
         const { data, error } = await auth.signUp(email, password, userData)
@@ -74,11 +78,20 @@ export const useAuthStore = create<AuthState>()(
       },
 
       signIn: async (email: string, password: string) => {
+        set({ loading: true })
         const { data, error } = await auth.signIn(email, password)
-        if (data.user && !error) {
-          set({ user: data.user, session: data.session })
+        
+        if (data.user && data.session && !error) {
+          set({ 
+            user: data.user, 
+            session: data.session,
+            loading: false
+          })
           await get().refreshUserProfile()
+        } else {
+          set({ loading: false })
         }
+        
         return { data, error }
       },
 
@@ -93,15 +106,24 @@ export const useAuthStore = create<AuthState>()(
       },
 
       signOut: async () => {
+        set({ loading: true })
         const { error } = await auth.signOut()
+        
         if (!error) {
+          // Clear Spotify tokens
+          await spotifyAPI.disconnect()
+          
           set({
             user: null,
             session: null,
             userProfile: null,
-            isSpotifyConnected: false
+            isSpotifyConnected: false,
+            loading: false
           })
+        } else {
+          set({ loading: false })
         }
+        
         return { error }
       },
 
@@ -119,7 +141,10 @@ export const useAuthStore = create<AuthState>()(
             
             // Initialize Spotify API if connected
             if (profile.spotify_connected) {
-              await spotifyAPI.initializeFromSession()
+              const initialized = await spotifyAPI.initializeFromSession()
+              if (initialized) {
+                set({ isSpotifyConnected: true })
+              }
             }
           }
         } catch (error) {
@@ -174,6 +199,8 @@ export const useAuthStore = create<AuthState>()(
       },
 
       initialize: async () => {
+        if (get().initialized) return
+        
         set({ loading: true })
         
         try {
@@ -192,12 +219,12 @@ export const useAuthStore = create<AuthState>()(
           supabase.auth.onAuthStateChange(async (event, session) => {
             console.log('Auth state changed:', event, session?.user?.email)
             
-            set({ 
-              session: session,
-              user: session?.user ?? null 
-            })
-            
             if (session?.user) {
+              set({ 
+                session: session,
+                user: session.user 
+              })
+              
               // Handle OAuth sign-ins
               if (event === 'SIGNED_IN') {
                 const provider = session.user.app_metadata?.provider
@@ -233,12 +260,15 @@ export const useAuthStore = create<AuthState>()(
               await get().refreshUserProfile()
             } else {
               set({ 
+                user: null,
+                session: null,
                 userProfile: null,
                 isSpotifyConnected: false 
               })
             }
           })
           
+          set({ initialized: true })
         } catch (error) {
           console.error('Error initializing auth:', error)
         } finally {
@@ -252,7 +282,8 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         session: state.session,
         userProfile: state.userProfile,
-        isSpotifyConnected: state.isSpotifyConnected
+        isSpotifyConnected: state.isSpotifyConnected,
+        initialized: state.initialized
       })
     }
   )

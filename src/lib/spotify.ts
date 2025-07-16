@@ -132,7 +132,12 @@ export class SpotifyAPI {
         } else if (connection.refresh_token) {
           // Token expired, try to refresh
           this.refreshToken = connection.refresh_token
-          return await this.refreshAccessToken()
+          const refreshed = await this.refreshAccessToken()
+          if (refreshed) {
+            this.userId = connection.spotify_user_id
+            this.saveTokensToStorage(this.accessToken!, this.refreshToken, this.userId)
+          }
+          return refreshed
         }
       }
     }
@@ -242,7 +247,8 @@ export class SpotifyAPI {
       const data = await response.json()
       
       if (data.access_token) {
-        this.saveTokensToStorage(data.access_token)
+        this.accessToken = data.access_token
+        this.saveTokensToStorage(data.access_token, data.refresh_token || this.refreshToken)
         
         // Update in Supabase
         const { data: { user } } = await supabase.auth.getUser()
@@ -251,7 +257,9 @@ export class SpotifyAPI {
           
           await db.upsertSpotifyConnection({
             user_id: user.id,
+            spotify_user_id: this.userId!,
             access_token: data.access_token,
+            refresh_token: data.refresh_token || this.refreshToken,
             expires_at: expiresAt
           })
         }
